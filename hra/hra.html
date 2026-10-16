@@ -1,0 +1,1807 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Náš Malý Svět ❤️</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+    body {
+      background: #0f111a;
+      color: #f8f9fa;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+      overflow-x: hidden;
+      overflow-y: auto;
+      touch-action: pan-y;
+      transition: background 2s ease;
+      padding: 8px;
+      gap: 8px;
+    }
+
+    /* Horní panel - responzivní pro mobil i tablet */
+    #ui-bar {
+      width: 100%;
+      max-width: 860px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(24, 25, 38, 0.95);
+      padding: 8px 12px;
+      border-radius: 12px;
+      border: 2px solid #4a4b68;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.6);
+      font-size: 12px;
+      font-weight: 600;
+      gap: 6px;
+      backdrop-filter: blur(8px);
+    }
+    .badge-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    .badge {
+      background: rgba(255,255,255,0.08);
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .btn-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    .ui-btn {
+      background: #89b4fa;
+      border: none;
+      color: #11111b;
+      padding: 6px 9px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 11px;
+      transition: all 0.15s ease;
+    }
+    .ui-btn:active { transform: scale(0.95); }
+
+    /* Herní okno přizpůsobené displeji */
+    #game-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 860px;
+      aspect-ratio: 860 / 530;
+      border: 3px solid #4a4b68;
+      border-radius: 14px;
+      box-shadow: 0 10px 35px rgba(0,0,0,0.8);
+      background: #181926;
+      overflow: hidden;
+      touch-action: none;
+    }
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      image-rendering: pixelated;
+    }
+
+    /* Dialog */
+    #dialogue-box {
+      position: absolute;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 92%;
+      background: rgba(24, 25, 38, 0.97);
+      border: 2px solid #fab387;
+      border-radius: 10px;
+      padding: 12px 14px;
+      display: none;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.8);
+      z-index: 40;
+    }
+    #dialogue-name { font-weight: 800; color: #fab387; margin-bottom: 4px; font-size: 14px; }
+    #dialogue-text { font-size: 13px; line-height: 1.4; color: #cad3f5; white-space: pre-line; }
+    #dialogue-hint { font-size: 11px; color: #8087a2; text-align: right; margin-top: 6px; font-style: italic; }
+
+    /* Dotykový ovladač pod herním oknem (optimalizovaný pro prsty) */
+    #touch-panel {
+      width: 100%;
+      max-width: 860px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 6px 12px;
+      touch-action: none;
+    }
+    .d-pad {
+      display: grid;
+      grid-template-columns: repeat(3, 52px);
+      grid-template-rows: repeat(3, 52px);
+      gap: 4px;
+    }
+    .t-btn {
+      background: #24273a;
+      border: 2px solid #5b6078;
+      border-radius: 10px;
+      color: #cad3f5;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+      touch-action: manipulation;
+    }
+    .t-btn:active, .t-btn.active {
+      background: #89b4fa;
+      color: #11111b;
+      transform: scale(0.93);
+    }
+    .action-pad {
+      display: grid;
+      grid-template-columns: repeat(2, 58px);
+      gap: 8px;
+    }
+    .act-touch-btn {
+      height: 52px;
+      background: #363a4f;
+      border: 2px solid #89b4fa;
+      border-radius: 12px;
+      color: #fff;
+      font-size: 13px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .act-touch-btn.main {
+      background: #a6da95;
+      border-color: #a6da95;
+      color: #181926;
+      font-size: 16px;
+      grid-column: span 2;
+      height: 48px;
+    }
+    .act-touch-btn:active { transform: scale(0.92); }
+
+    /* Modály */
+    .modal-box {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 90%;
+      max-width: 440px;
+      background: rgba(30, 32, 48, 0.98);
+      border: 2px solid #89b4fa;
+      border-radius: 14px;
+      padding: 16px;
+      display: none;
+      box-shadow: 0 15px 40px rgba(0,0,0,0.9);
+      z-index: 50;
+      max-height: 85vh;
+      overflow-y: auto;
+    }
+    .modal-title { font-size: 16px; font-weight: 800; color: #89b4fa; margin-bottom: 12px; text-align: center; }
+    .item-card {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #24273a;
+      padding: 9px 12px;
+      margin-bottom: 8px;
+      border-radius: 8px;
+      font-size: 12px;
+    }
+    .act-btn {
+      background: #a6da95;
+      border: none;
+      color: #181926;
+      font-weight: 700;
+      padding: 6px 12px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .act-btn:disabled { background: #5b6078; color: #8087a2; cursor: not-allowed; }
+    .close-modal {
+      width: 100%;
+      background: #ed8796;
+      border: none;
+      color: #181926;
+      font-weight: 700;
+      padding: 8px;
+      border-radius: 6px;
+      margin-top: 10px;
+      cursor: pointer;
+    }
+    .form-group { margin-bottom: 10px; }
+    .form-group label { display: block; font-size: 12px; margin-bottom: 4px; color: #eed49f; }
+    .form-group select, .form-group input {
+      width: 100%;
+      padding: 8px;
+      background: #181926;
+      border: 1px solid #4a4b68;
+      border-radius: 6px;
+      color: #fff;
+      font-size: 13px;
+    }
+    .photo-frame {
+      background: #181926;
+      border: 2px solid #5b6078;
+      border-radius: 8px;
+      padding: 6px;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+    .photo-frame img { max-width: 100%; border-radius: 4px; display: block; margin: 0 auto 6px; }
+    #camera-flash {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: #fff;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s ease-out;
+      z-index: 60;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Horní informační panel -->
+  <div id="ui-bar">
+    <div class="badge-group">
+      <span class="badge" id="ui-time">Čas: 08:00</span>
+      <span class="badge" id="ui-weather">☀️ Den</span>
+      <span class="badge" id="ui-money" style="color: #eed49f;">Kč: 450</span>
+      <span class="badge" id="ui-location">Byt</span>
+      <span class="badge" id="ui-pet">Bez mazlíčka</span>
+    </div>
+    <div class="btn-group">
+      <button class="ui-btn" onclick="openCreatorModal()">👤 Postava</button>
+      <button class="ui-btn" onclick="takePhoto()">📷 Foto</button>
+      <button class="ui-btn" onclick="openAlbum()">🖼️ Album</button>
+      <button class="ui-btn" onclick="openQuests()">📜 Úkoly</button>
+      <button class="ui-btn" onclick="openBackpack()">🎒 Batoh</button>
+    </div>
+  </div>
+
+  <!-- Herní plocha -->
+  <div id="game-wrapper">
+    <div id="camera-flash"></div>
+    <canvas id="canvas" width="860" height="530"></canvas>
+    
+    <div id="dialogue-box" onclick="closeDialogue()">
+      <div id="dialogue-name">Postava</div>
+      <div id="dialogue-text">Zpráva...</div>
+      <div id="dialogue-hint">Klikni sem nebo stiskni OK pro zavření</div>
+    </div>
+  </div>
+
+  <!-- Dotykový ovladač pro mobily a iPady -->
+  <div id="touch-panel">
+    <div class="d-pad">
+      <div></div><button class="t-btn" id="btn-up">▲</button><div></div>
+      <button class="t-btn" id="btn-left">◀</button><button class="t-btn" id="btn-down">▼</button><button class="t-btn" id="btn-right">▶</button>
+    </div>
+    <div class="action-pad">
+      <button class="act-touch-btn" onclick="toggleScooter()">🛵 Moped</button>
+      <button class="act-touch-btn" onclick="petHeart()">❤️ Hladit</button>
+      <button class="act-touch-btn" onclick="triggerFishing()">🎣 Ryby</button>
+      <button class="act-touch-btn" onclick="takePhoto()">📷 Momentka</button>
+      <button class="act-touch-btn main" onclick="handleAction()">OK / AKCE</button>
+    </div>
+  </div>
+
+  <!-- Modály -->
+  <div id="creator-modal" class="modal-box">
+    <div class="modal-title">Vytvoř si svou postavičku 🌸</div>
+    <div class="form-group">
+      <label>Tvoje jméno / přezdívka:</label>
+      <input type="text" id="cust-name" value="Ty">
+    </div>
+    <div class="form-group">
+      <label>Barva vlasů:</label>
+      <select id="cust-hair">
+        <option value="#6e4024">Kaštanově hnědé</option>
+        <option value="#eed49f">Zlatavě blonďaté</option>
+        <option value="#181926">Tmavé / Černé</option>
+        <option value="#c6785c">Zrzavé / Měděné</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Délka účesu:</label>
+      <select id="cust-style">
+        <option value="long">Dlouhé rozpuštěné</option>
+        <option value="short">Krátké stylové</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Barva šatů:</label>
+      <select id="cust-outfit">
+        <option value="#f38ba8">Pastelově růžové</option>
+        <option value="#eed49f">Slunečně žluté</option>
+        <option value="#8bd5ca">Tyrkysově modré</option>
+        <option value="#a6da95">Smaragdově zelené</option>
+      </select>
+    </div>
+    <button class="act-btn" style="width:100%; padding:10px; margin-top:8px;" onclick="saveCharacter()">Uložit vzhled ✨</button>
+  </div>
+
+  <div id="shop-modal" class="modal-box">
+    <div id="shop-title" class="modal-title">Obchod</div>
+    <div id="shop-items"></div>
+    <button class="close-modal" onclick="closeAllModals()">Zavřít</button>
+  </div>
+
+  <div id="quest-modal" class="modal-box">
+    <div class="modal-title">Společné Příběhové Úkoly</div>
+    <div id="quest-items"></div>
+    <button class="close-modal" onclick="closeAllModals()">Zavřít</button>
+  </div>
+
+  <div id="backpack-modal" class="modal-box">
+    <div class="modal-title">Tvůj Batoh a Inventář</div>
+    <div id="backpack-items"></div>
+    <button class="close-modal" onclick="closeAllModals()">Zavřít</button>
+  </div>
+
+  <div id="album-modal" class="modal-box">
+    <div class="modal-title">Fotoalbum Vzpomínek</div>
+    <div id="album-items"></div>
+    <button class="close-modal" onclick="closeAllModals()">Zavřít</button>
+  </div>
+
+<script>
+// --- ZVUKY (Web Audio API) ---
+const audio = new (window.AudioContext || window.webkitAudioContext)();
+function beep(freq, type, dur, vol = 0.08) {
+  try {
+    if (audio.state === 'suspended') audio.resume();
+    const osc = audio.createOscillator();
+    const g = audio.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, audio.currentTime);
+    g.gain.setValueAtTime(vol, audio.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, audio.currentTime + dur);
+    osc.connect(g);
+    g.connect(audio.destination);
+    osc.start();
+    osc.stop(audio.currentTime + dur);
+  } catch(e) {}
+}
+
+const sounds = {
+  coin: () => { beep(987, 'sine', 0.1); setTimeout(() => beep(1318, 'sine', 0.2), 80); },
+  hit: () => beep(260, 'triangle', 0.08, 0.16),
+  camera: () => { beep(600, 'square', 0.04); setTimeout(() => beep(850, 'square', 0.06), 50); },
+  horn: () => beep(440, 'sawtooth', 0.16),
+  purr: () => { beep(480, 'sine', 0.1); setTimeout(() => beep(640, 'sine', 0.15), 80); },
+  splash: () => beep(190, 'sine', 0.2),
+  bake: () => { beep(523, 'triangle', 0.15); setTimeout(() => beep(659, 'triangle', 0.2), 120); }
+};
+
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const flash = document.getElementById('camera-flash');
+const uiBar = document.getElementById('ui-bar');
+
+const SAVE_ID = 'nase_mesto_adventure_v15_mobile';
+let saved = {};
+try { saved = JSON.parse(localStorage.getItem(SAVE_ID)) || {}; } catch(e) { saved = {}; }
+
+const state = {
+  money: saved.money ?? 450,
+  day: saved.day ?? 1,
+  time: saved.time ?? 480,
+  scene: saved.scene ?? 'home',
+  pet: saved.pet ?? null,
+  petName: saved.petName ?? '',
+  petLove: saved.petLove ?? 0,
+  hasScooter: saved.hasScooter ?? false,
+  ridingScooter: false,
+  charName: saved.charName ?? 'Ty',
+  charHair: saved.charHair ?? '#6e4024',
+  charStyle: saved.charStyle ?? 'long',
+  outfit: saved.outfit ?? '#f38ba8',
+  flowersInVase: saved.flowersInVase ?? false,
+  garden: saved.garden ?? { planted: false, progress: 0, ready: false },
+  inventory: saved.inventory ?? [],
+  photos: saved.photos ?? [],
+  quests: saved.quests ?? [
+    { id: 'coffee', text: 'Vychutnej si v kavárně Karamelové Latté', reward: 50, done: false },
+    { id: 'gift', text: 'Kup dárek / upeč dort a předej ho příteli', reward: 120, done: false },
+    { id: 'tennis', text: 'Vyhraj tenisový zápas na kurtu', reward: 150, done: false },
+    { id: 'bake', text: 'Upeč v kuchyňce domácí jahodový dort', reward: 100, done: false },
+    { id: 'vase', text: 'Dej natrhané květiny doma do vázy', reward: 60, done: false },
+    { id: 'london', text: 'Kup letenku a navštivte spolu Londýn', reward: 200, done: false }
+  ]
+};
+
+function saveState() {
+  try { localStorage.setItem(SAVE_ID, JSON.stringify(state)); } catch(e) {}
+}
+
+function completeQuest(id) {
+  const q = state.quests.find(x => x.id === id);
+  if (q && !q.done) {
+    q.done = true;
+    state.money += q.reward;
+    sounds.coin();
+    showDialogue('Úkol Splněn! ⭐', `Dokončila jsi: "${q.text}".\nOdměna: +${q.reward} Kč!`);
+    saveState();
+    updateUI();
+  }
+}
+
+// Běh času
+setInterval(() => {
+  if (state.scene === 'tennis') return;
+  state.time += 1;
+  if (state.time >= 1440) {
+    state.time = 0;
+    state.day += 1;
+  }
+  if (state.garden.planted && !state.garden.ready) {
+    state.garden.progress += 1;
+    if (state.garden.progress >= 20) state.garden.ready = true;
+  }
+  updateUI();
+  updateAmbiance();
+  if (state.time % 10 === 0) saveState();
+}, 1000);
+
+const player = {
+  x: 430,
+  y: 280,
+  w: 22,
+  h: 32,
+  speed: 3.8,
+  moving: false,
+  stepTimer: 0
+};
+
+const pet = {
+  x: 400,
+  y: 280,
+  w: 16,
+  h: 14,
+  tailTimer: 0,
+  hearts: []
+};
+
+const clouds = [
+  { x: 40, y: 35, speed: 0.22, size: 45 },
+  { x: 360, y: 65, speed: 0.17, size: 55 },
+  { x: 680, y: 30, speed: 0.24, size: 50 }
+];
+
+const ducks = [
+  { x: 440, y: 160, vx: 0.3 },
+  { x: 490, y: 180, vx: -0.25 }
+];
+
+let riverBoatX = 80;
+
+let flowers = [
+  { x: 140, y: 360, picked: false },
+  { x: 290, y: 380, picked: false },
+  { x: 570, y: 360, picked: false }
+];
+
+const stars = Array.from({length: 35}, () => ({
+  x: Math.random() * 860,
+  y: Math.random() * 150,
+  r: Math.random() * 1.5 + 0.4
+}));
+
+// --- MULTITOUCH & KLÁVESNICE ---
+const keys = {};
+
+window.addEventListener('keydown', e => {
+  keys[e.key.toLowerCase()] = true;
+  if (e.key === ' ' || e.code === 'Space') { e.preventDefault(); handleAction(); }
+  if (e.key.toLowerCase() === 'c') takePhoto();
+  if (e.key.toLowerCase() === 'e') petHeart();
+  if (e.key.toLowerCase() === 'r') toggleScooter();
+  if (e.key.toLowerCase() === 'f') triggerFishing();
+  if (e.key.toLowerCase() === 'escape') closeAllModals();
+});
+window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+
+function bindTouchKey(id, k) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const setKey = (val) => {
+    keys[k] = val;
+    if (val) el.classList.add('active');
+    else el.classList.remove('active');
+  };
+  el.addEventListener('touchstart', e => { e.preventDefault(); setKey(true); });
+  el.addEventListener('touchend', e => { e.preventDefault(); setKey(false); });
+  el.addEventListener('touchcancel', e => { e.preventDefault(); setKey(false); });
+  el.addEventListener('mousedown', () => setKey(true));
+  el.addEventListener('mouseup', () => setKey(false));
+  el.addEventListener('mouseleave', () => setKey(false));
+}
+bindTouchKey('btn-up', 'arrowup');
+bindTouchKey('btn-down', 'arrowdown');
+bindTouchKey('btn-left', 'arrowleft');
+bindTouchKey('btn-right', 'arrowright');
+
+function openCreatorModal() {
+  closeAllModals();
+  document.getElementById('cust-name').value = state.charName;
+  document.getElementById('cust-hair').value = state.charHair;
+  document.getElementById('cust-style').value = state.charStyle;
+  document.getElementById('cust-outfit').value = state.outfit;
+  document.getElementById('creator-modal').style.display = 'block';
+}
+
+function saveCharacter() {
+  state.charName = document.getElementById('cust-name').value || 'Ty';
+  state.charHair = document.getElementById('cust-hair').value;
+  state.charStyle = document.getElementById('cust-style').value;
+  state.outfit = document.getElementById('cust-outfit').value;
+  saveState();
+  closeAllModals();
+  sounds.coin();
+  showDialogue('Postavička uložena!', `Ahoj ${state.charName}! Tvůj nový styl je nastaven.`);
+}
+
+function toggleScooter() {
+  if (!state.hasScooter) {
+    showDialogue('Moped Vespa', 'Ještě nemáš moped! Můžeš si ho pořídit v Módním Butiku na náměstí.');
+    return;
+  }
+  state.ridingScooter = !state.ridingScooter;
+  player.speed = state.ridingScooter ? 6.6 : 3.8;
+  sounds.horn();
+}
+
+function petHeart() {
+  if (!state.pet) return;
+  const dist = Math.hypot((player.x + 11) - (pet.x + 8), (player.y + 16) - (pet.y + 7));
+  if (dist < 65) {
+    state.petLove += 1;
+    pet.hearts.push({ x: pet.x + 4, y: pet.y - 12, life: 30 });
+    sounds.purr();
+    const msgs = [
+      `${state.petName} spokojeně zavrtěl ocáskem a přitulil se! ❤️`,
+      `${state.petName} radostně poskakuje kolem tebe!`,
+      `Pohladila jsi ${state.petName}. Má tě moc rád!`
+    ];
+    showDialogue(state.petName, msgs[Math.floor(Math.random() * msgs.length)]);
+    saveState();
+  }
+}
+
+function triggerFishing() {
+  if (state.scene !== 'city_east' && state.scene !== 'budapest') {
+    showDialogue('Rybaření 🎣', 'Tady se nedá rybařit, přejdi na promenádu k jezírku nebo na Dunaj.');
+    return;
+  }
+  sounds.splash();
+  showDialogue('Rybaření 🎣', 'Nahodila jsi prut do vln... Čekáš na záběr...');
+  setTimeout(() => {
+    sounds.coin();
+    state.inventory.push('Čerstvý pstruh');
+    showDialogue('Úlovek! 🐟', 'Záběr! Vytáhla jsi krásného čerstvého pstruha.');
+    saveState();
+  }, 1500);
+}
+
+function takePhoto() {
+  if (state.scene === 'tennis') return;
+
+  sounds.camera();
+  flash.style.opacity = '0.9';
+  setTimeout(() => { flash.style.opacity = '0'; }, 180);
+
+  const photoUrl = canvas.toDataURL('image/jpeg', 0.85);
+  const timeStr = `${String(Math.floor(state.time / 60)).padStart(2, '0')}:${String(state.time % 60).padStart(2, '0')}`;
+  
+  let locName = 'Byt';
+  if (state.scene === 'city_west') locName = 'Náměstí (Západ)';
+  if (state.scene === 'city_east') locName = 'Promenáda (Východ)';
+  if (state.scene === 'pub') locName = 'Hospůdka U Šuláků';
+  if (state.scene === 'london') locName = 'Londýn';
+  if (state.scene === 'budapest') locName = 'Budapešť';
+  if (state.scene === 'cinema') locName = 'Letní Kino';
+
+  state.photos.unshift({
+    url: photoUrl,
+    title: `${locName} - Den ${state.day} (${timeStr})`
+  });
+
+  if (state.photos.length > 8) state.photos.pop();
+  saveState();
+  showDialogue('Fotoaparát 📸', `Krásná momentka byla uložena do tvého Fotoalba!`);
+}
+
+// Tenisová mechanika
+const tennis = {
+  ballX: 430, ballY: 265,
+  ballSpeedX: 4.6, ballSpeedY: 2.6, ballSize: 8,
+  playerY: 220, aiY: 220,
+  paddleH: 70, paddleW: 10,
+  playerScore: 0, aiScore: 0, targetScore: 5
+};
+
+function startTennis() {
+  state.scene = 'tennis';
+  tennis.playerScore = 0;
+  tennis.aiScore = 0;
+  tennis.ballX = 430; tennis.ballY = 265;
+  tennis.ballSpeedX = 4.6; tennis.ballSpeedY = 2.6;
+  tennis.playerY = 220; tennis.aiY = 220;
+  updateUI();
+  updateAmbiance();
+}
+
+function updateTennis() {
+  if (keys['w'] || keys['arrowup']) tennis.playerY -= 4.8;
+  if (keys['s'] || keys['arrowdown']) tennis.playerY += 4.8;
+  tennis.playerY = Math.max(70, Math.min(460 - tennis.paddleH, tennis.playerY));
+
+  const aiCenter = tennis.aiY + tennis.paddleH / 2;
+  if (aiCenter < tennis.ballY - 10) tennis.aiY += 3.4;
+  else if (aiCenter > tennis.ballY + 10) tennis.aiY -= 3.4;
+  tennis.aiY = Math.max(70, Math.min(460 - tennis.paddleH, tennis.aiY));
+
+  tennis.ballX += tennis.ballSpeedX;
+  tennis.ballY += tennis.ballSpeedY;
+
+  if (tennis.ballY <= 70 || tennis.ballY >= 460) {
+    tennis.ballSpeedY = -tennis.ballSpeedY;
+    sounds.hit();
+  }
+
+  if (tennis.ballX <= 125 && tennis.ballX >= 110 && 
+      tennis.ballY >= tennis.playerY && tennis.ballY <= tennis.playerY + tennis.paddleH) {
+    tennis.ballSpeedX = Math.abs(tennis.ballSpeedX) * 1.05;
+    tennis.ballSpeedY += (Math.random() - 0.5) * 2;
+    sounds.hit();
+  }
+
+  if (tennis.ballX >= 735 && tennis.ballX <= 750 && 
+      tennis.ballY >= tennis.aiY && tennis.ballY <= tennis.aiY + tennis.paddleH) {
+    tennis.ballSpeedX = -Math.abs(tennis.ballSpeedX) * 1.05;
+    tennis.ballSpeedY += (Math.random() - 0.5) * 2;
+    sounds.hit();
+  }
+
+  if (tennis.ballX < 80) {
+    tennis.aiScore++;
+    tennis.ballX = 430; tennis.ballY = 265; tennis.ballSpeedX = -4.6;
+  } else if (tennis.ballX > 780) {
+    tennis.playerScore++;
+    tennis.ballX = 430; tennis.ballY = 265; tennis.ballSpeedX = 4.6;
+    sounds.coin();
+  }
+
+  if (tennis.playerScore >= tennis.targetScore || tennis.aiScore >= tennis.targetScore) {
+    const won = tennis.playerScore >= tennis.targetScore;
+    state.scene = 'city_east';
+    player.x = 640; player.y = 360;
+    if (won) {
+      state.money += 150;
+      sounds.coin();
+      completeQuest('tennis');
+      showDialogue('Já (přítel)', `Krásný zápas! Porazilas mě ${tennis.playerScore}:${tennis.aiScore}. Tady máš prémii 150 Kč!`);
+    } else {
+      showDialogue('Já (přítel)', `Skvělá hra! Skončilo to ${tennis.playerScore}:${tennis.aiScore}. Příště mě určitě porazíš!`);
+    }
+    saveState();
+    updateUI();
+    updateAmbiance();
+  }
+}
+
+let isDialogueOpen = false;
+
+// Objekty ve scénách
+const objects = {
+  home: [
+    { type: 'bed', label: 'Postel', x: 50, y: 100, w: 90, h: 105, interact: () => {
+      const notes = [
+        "„Dobré ráno lásko! Dneska ti to bude neuvěřitelně slušet. Mám tě moc rád! ❤️“",
+        "„Nezapomeň si dát ranní kávu a pusu. Těším se na naše odpoledne!“",
+        "„Jsi to nejlepší, co mě v životě potkalo. Krásný den!“"
+      ];
+      const note = notes[Math.floor(Math.random() * notes.length)];
+      showDialogue('Ranní vzkaz na polštáři 💌', `${note}\n\n(Vyspala ses do růžova. Začíná nový slunečný den!)`);
+      state.time = 480;
+      state.day += 1;
+      saveState();
+      updateAmbiance();
+    }},
+    { type: 'wardrobe', label: 'Šatník', x: 160, y: 95, w: 75, h: 50, interact: () => {
+      openCreatorModal();
+    }},
+    { type: 'living_tv', label: 'Smart TV', x: 370, y: 85, w: 120, h: 40, interact: () => {
+      openShop('Televize a Programy', [
+        { name: 'Pustit romantický film na Netflixu', price: 0, action: () => showDialogue('Netflix 🎬', 'Pustila sis váš oblíbený romantický film.') },
+        { name: 'Pustit hudební klipy k vaření', price: 0, action: () => { beep(523, 'sine', 0.4); showDialogue('Hudba 🎵', 'Z televize hraje příjemná hudba.'); } },
+        { name: 'Přepnout na tenisové finále', price: 0, action: () => showDialogue('Sport 🎾', 'Sleduješ napínavý tenisový zápas!') }
+      ]);
+    }},
+    { type: 'kitchen', label: 'Kuchyňka 🍳', x: 670, y: 95, w: 100, h: 50, interact: () => {
+      openShop('Kuchyňka a Pečení', [
+        { name: 'Uvařit Horkou Čokoládu', price: 20, action: () => {
+          sounds.bake();
+          state.inventory.push('Horká čokoláda se šlehačkou');
+          showDialogue('Kuchyňka ☕', 'Uvařila jsi voňavou horkou čokoládu!');
+        }},
+        { name: 'Upect Jahodový Dort', price: 40, action: () => {
+          sounds.bake();
+          state.inventory.push('Domácí jahodový dort');
+          completeQuest('bake');
+          showDialogue('Trouba 🎂', 'Dort se krásně upekl a voní po celém bytě!');
+        }}
+      ]);
+    }},
+    { type: 'dining_table', label: 'Stůl (Váza) 🌸', x: 670, y: 220, w: 90, h: 65, interact: () => {
+      const flowerIdx = state.inventory.findIndex(item => item === 'Kytice lučního kvítí');
+      if (flowerIdx !== -1) {
+        state.inventory.splice(flowerIdx, 1);
+        state.flowersInVase = true;
+        completeQuest('vase');
+        sounds.coin();
+        saveState();
+        showDialogue('Váza na stole 🌸', 'Dala jsi natrhané květiny do vázy. Byt krásně voní!');
+      } else if (state.flowersInVase) {
+        showDialogue('Jídelní stůl 🌸', 'Na stole stojí váza s čerstvými květinami.');
+      } else {
+        showDialogue('Jídelní stůl', 'Na stole je prázdná váza. Až natrháš květiny ve městě, dej je sem!');
+      }
+    }},
+    { type: 'garden_bed', label: 'Záhonek 🍓', x: 50, y: 380, w: 100, h: 75, interact: () => {
+      if (!state.garden.planted) {
+        state.garden.planted = true;
+        state.garden.progress = 0;
+        state.garden.ready = false;
+        showDialogue('Záhonek 🍓', 'Zasela jsi jahody! Za pár minut vyrostou.');
+      } else if (state.garden.ready) {
+        state.garden.planted = false;
+        state.garden.ready = false;
+        state.money += 110;
+        state.inventory.push('Košík sladkých jahod');
+        sounds.coin();
+        showDialogue('Sklizeň jahod! 🍓', 'Sklidila jsi košík jahod a získala 110 Kč!');
+      } else {
+        showDialogue('Záhonek 🌱', `Jahůdky rostou na sluníčku... Vydrž chvilku!`);
+      }
+      saveState();
+    }},
+    { type: 'door', label: 'Dveře na Náměstí ➔', x: 810, y: 390, w: 35, h: 80, interact: () => {
+      state.scene = 'city_west';
+      player.x = 60; player.y = 250;
+      updateUI();
+    }}
+  ],
+
+  city_west: [
+    { type: 'door', label: 'Cesta domů', x: 10, y: 220, w: 30, h: 80, interact: () => {
+      state.scene = 'home';
+      player.x = 760; player.y = 420;
+      updateUI();
+    }},
+    { type: 'door', label: 'Promenáda (Východ) ➔', x: 820, y: 220, w: 30, h: 80, interact: () => {
+      state.scene = 'city_east';
+      player.x = 50; player.y = 250;
+      updateUI();
+    }},
+    { type: 'building', sub: 'boutique', label: 'Módní Butik', x: 40, y: 70, w: 95, h: 75, roofColor: '#be185d', wallColor: '#fce7f3', awning: '#ec4899', interact: () => {
+      openShop('Módní Butik', [
+        { name: 'Upravit postavu v zrcadle', price: 0, action: () => openCreatorModal() },
+        { name: 'Moped Vespa [R]', price: 220, bought: state.hasScooter, action: () => { state.hasScooter = true; sounds.horn(); showDialogue('Prodejce', 'Máš svůj vlastní moped! Stiskni tlačítko Moped pro rychlou jízdu.'); } }
+      ]);
+    }},
+    { type: 'building', sub: 'petshop', label: 'Zverimex', x: 165, y: 70, w: 95, h: 75, roofColor: '#d97706', wallColor: '#fef3c7', awning: '#f59e0b', interact: () => {
+      openShop('Zverimex & Mazlíčci', [
+        { name: 'Štěně Zlatého retrívra', price: 200, action: () => { state.pet = 'dog'; state.petName = 'Blesk'; } },
+        { name: 'Britské kotě', price: 180, action: () => { state.pet = 'cat'; state.petName = 'Micka'; } },
+        { name: 'Sušenky pro mazlíčka', price: 30, action: () => { state.inventory.push('Pamlsek'); showDialogue('Prodavač', 'Koupila jsi pamlsky! Můžeš zvířátko hladit.'); } }
+      ]);
+    }},
+    { type: 'building', sub: 'furniture', label: 'Nábytek', x: 415, y: 70, w: 105, h: 75, roofColor: '#6d28d9', wallColor: '#ede9fe', awning: '#8b5cf6', interact: () => {
+      openShop('Nábytek do bytu', [
+        { name: 'Pracovní stolek s lampičkou', price: 140, action: () => showDialogue('Nábytek', 'Stolek byl doručen do bytu!') },
+        { name: 'Retro Gramofon', price: 180, action: () => { beep(523, 'sine', 0.5); showDialogue('Nábytek', 'Gramofon hraje v bytě!'); } }
+      ]);
+    }},
+    { type: 'building', sub: 'cafe', label: 'Kavárna', x: 670, y: 70, w: 100, h: 75, roofColor: '#047857', wallColor: '#d1fae5', awning: '#10b981', interact: () => {
+      openShop('Kavárna & Dobroty', [
+        { name: 'Karamelové Latté', price: 45, action: () => { completeQuest('coffee'); showDialogue('Kavárník', 'Tvoje oblíbené karamelové latté!'); } },
+        { name: 'Ledová káva pro kluka', price: 45, action: () => { state.inventory.push('Ledová káva pro kluka'); showDialogue('Kavárník', 'Zabaleno s sebou pro přítele!'); } },
+        { name: 'Čokoláda s oříšky', price: 40, action: () => { state.inventory.push('Čokoláda s oříšky'); showDialogue('Kavárník', 'Čokoláda uložena do batohu.'); } }
+      ]);
+    }},
+    { type: 'building', sub: 'airport', label: 'Letiště ✈️', x: 40, y: 360, w: 120, h: 80, roofColor: '#1e40af', wallColor: '#e0e7ff', awning: '#3b82f6', interact: () => {
+      openShop('Letiště & Cestování', [
+        { name: 'Letenka do Londýna (Harry Potter & Wimbledon)', price: 180, action: () => {
+          state.scene = 'london';
+          player.x = 100; player.y = 350;
+          completeQuest('london');
+          showDialogue('Letuška ✈️', 'Vítejte v Londýně! Přistáváme na letišti Stansted.');
+          updateUI();
+        }},
+        { name: 'Letenka do Budapešti (Dunaj & Parlament)', price: 160, action: () => {
+          state.scene = 'budapest';
+          player.x = 100; player.y = 350;
+          showDialogue('Průvodce 🇭🇺', 'Vítejte v Budapešti! Projděte se po nábřeží Dunaje.');
+          updateUI();
+        }}
+      ]);
+    }}
+  ],
+
+  city_east: [
+    { type: 'door', label: '⬅ Náměstí (Západ)', x: 10, y: 220, w: 30, h: 80, interact: () => {
+      state.scene = 'city_west';
+      player.x = 800; player.y = 250;
+      updateUI();
+    }},
+    { type: 'npc', label: 'Já (přítel)', x: 340, y: 230, w: 24, h: 32, interact: () => {
+      const giftIdx = state.inventory.findIndex(item => item === 'Čokoláda s oříšky' || item === 'Čepovaný speciál' || item === 'Ledová káva pro kluka' || item === 'Domácí jahodový dort' || item === 'Košík sladkých jahod');
+      if (giftIdx !== -1) {
+        const giftName = state.inventory.splice(giftIdx, 1)[0];
+        completeQuest('gift');
+        sounds.coin();
+        saveState();
+        showDialogue('Já (přítel)', `Jéé, ty jsi mi přinesla "${giftName}"? Ty jsi ta nejúžasnější a nejhodnější holka na světě! ❤️`);
+        return;
+      }
+      const msgs = [
+        "Ahoj lásko! Nechceš si jít pinknout tenis na kurty vpravo dole?",
+        "Zkusila jsi chytat ryby u jezírka tlačítkem [Ryby]?",
+        "Moc ti to dneska sekne! Zmáčkni [Foto] a vyfoť si nás spolu!",
+        "Můžeme zajít do kina na film nebo na večeři do hospůdky!"
+      ];
+      showDialogue('Já (přítel)', msgs[Math.floor(Math.random() * msgs.length)]);
+    }},
+    { type: 'building', sub: 'cinema', label: 'Letní Kino 🎬', x: 140, y: 360, w: 110, h: 80, roofColor: '#7c3aed', wallColor: '#ede9fe', awning: '#a855f7', interact: () => {
+      openShop('Letní Kino', [
+        { name: 'Vstupenka na film + Popcorn', price: 90, action: () => {
+          state.scene = 'cinema';
+          player.x = 430; player.y = 380;
+          updateUI();
+        }}
+      ]);
+    }},
+    { type: 'building', sub: 'pub', label: 'Hospůdka U Šuláků', x: 290, y: 360, w: 130, h: 80, roofColor: '#b45309', wallColor: '#fef3c7', awning: '#dc2626', interact: () => {
+      openShop('Hospůdka U Šuláků', [
+        { name: 'Čepovaný speciál', price: 38, action: () => { state.inventory.push('Čepovaný speciál'); showDialogue('Výčepní', 'Nalito do džbánku do batohu!'); } },
+        { name: 'Domácí nakládaný hermelín', price: 65, action: () => showDialogue('Výčepní', 'Výborná večeře na posezení s přítelem!') }
+      ]);
+    }},
+    { type: 'court', label: 'Tenisové kurty', x: 670, y: 350, w: 140, h: 105, interact: () => {
+      showDialogue('Tenisový kurt', 'Zápas na 5 vítězných bodů začíná!');
+      setTimeout(() => { closeDialogue(); startTennis(); }, 1000);
+    }}
+  ],
+
+  pub: [
+    { type: 'door', label: 'Odchod na ulici', x: 410, y: 490, w: 60, h: 30, interact: () => {
+      state.scene = 'city_east';
+      player.x = 350; player.y = 450;
+      updateUI();
+    }},
+    { type: 'bar', label: 'Výčep & Bar', x: 240, y: 80, w: 360, h: 70, interact: () => {
+      openShop('Hospůdka U Šuláků', [
+        { name: 'Čepovaný speciál', price: 38, action: () => { state.inventory.push('Čepovaný speciál'); showDialogue('Výčepní', 'Nalito do džbánku do batohu!'); } },
+        { name: 'Domácí nakládaný hermelín', price: 65, action: () => showDialogue('Výčepní', 'Výborná večeře!') }
+      ]);
+    }},
+    { type: 'viptable', label: 'Náš VIP Stůl', x: 630, y: 260, w: 90, h: 80, interact: () => {
+      showDialogue('Rande u stolu', 'Sedíte tu spolu a povídáte si o všem možném. Krásný večer! ❤️');
+    }}
+  ],
+  cinema: [
+    { type: 'door', label: 'Východ z kina', x: 410, y: 490, w: 60, h: 30, interact: () => {
+      state.scene = 'city_east';
+      player.x = 190; player.y = 450;
+      updateUI();
+    }},
+    { type: 'screen', label: 'Plátno Kina', x: 230, y: 60, w: 400, h: 180, interact: () => {
+      showDialogue('Film pro dva 📽️', '„Náš společný film nemá konec. Každý den píšeme novou kapitolu plnou smíchu a lásky.“ ❤️');
+    }}
+  ],
+  london: [
+    { type: 'door', label: 'Návrat domů ✈️', x: 40, y: 450, w: 100, h: 40, interact: () => {
+      state.scene = 'city_west';
+      player.x = 100; player.y = 440;
+      updateUI();
+    }},
+    { type: 'building', sub: 'hp_studio', label: 'Harry Potter Studios ⚡', x: 180, y: 70, w: 180, h: 90, roofColor: '#581c87', wallColor: '#f3e8ff', awning: '#7e22ce', interact: () => {
+      showDialogue('Warner Bros. Studios ⚡', 'Procházíte Velkou síní v Bradavicích! Koupili jste si pravý Máslový ležák.');
+    }},
+    { type: 'building', sub: 'wimbledon', label: 'Wimbledon Centre Court 🎾', x: 490, y: 70, w: 180, h: 90, roofColor: '#15803d', wallColor: '#ecfdf5', awning: '#16a34a', interact: () => {
+      showDialogue('Wimbledon 🍓🎾', 'Legendární travnatý kurt! Dáváte si jahody se šlehačkou.');
+    }},
+    { type: 'chest', label: 'Tajemná truhla 💌', x: 730, y: 380, w: 45, h: 35, interact: () => {
+      showDialogue('Osobní vzkaz pro tebe ❤️', '„Děkuji ti za každý den, který spolu trávíme. Ať už jsme doma, na tenise nebo na cestách, s tebou je každý moment nejkrásnější. Mám tě moc rád! ❤️“');
+    }}
+  ],
+  budapest: [
+    { type: 'door', label: 'Návrat domů ✈️', x: 40, y: 450, w: 100, h: 40, interact: () => {
+      state.scene = 'city_west';
+      player.x = 100; player.y = 440;
+      updateUI();
+    }},
+    { type: 'parliament', label: 'Maďarský Parlament 🏛️', x: 260, y: 60, w: 320, h: 110, interact: () => {
+      showDialogue('Budapešťský Parlament 🏛️', 'Zlatě osvětlený parlament se zrcadlí na Dunaji. Stiskni [Foto] a vyfoť si ho!');
+    }},
+    { type: 'boat_dock', label: 'Plavba lodí 🚢', x: 630, y: 320, w: 130, h: 70, interact: () => {
+      showDialogue('Plavba po Dunaji 🚢', 'Plujete na noční lodičce pod mostem a užíváte si romantický večer.');
+    }}
+  ]
+};
+
+function handleAction() {
+  if (isDialogueOpen) {
+    closeDialogue();
+    return;
+  }
+  if (state.scene === 'tennis') return;
+
+  if (state.scene === 'city_west' || state.scene === 'city_east') {
+    for (const f of flowers) {
+      if (!f.picked && Math.hypot((player.x + 11) - f.x, (player.y + 16) - f.y) < 36) {
+        f.picked = true;
+        state.inventory.push('Kytice lučního kvítí');
+        sounds.coin();
+        showDialogue('Květiny 🌸', 'Natrhala jsi čerstvou kytici! Můžeš ji doma dát do vázy na stole.');
+        saveState();
+        return;
+      }
+    }
+  }
+
+  const curObjs = objects[state.scene] || [];
+  for (const obj of curObjs) {
+    const dist = Math.hypot((player.x + player.w/2) - (obj.x + obj.w/2),
+                          (player.y + player.h/2) - (obj.y + obj.h/2));
+    if (dist < 75) {
+      obj.interact();
+      break;
+    }
+  }
+}
+
+function showDialogue(name, text) {
+  isDialogueOpen = true;
+  document.getElementById('dialogue-name').innerText = name;
+  document.getElementById('dialogue-text').innerText = text;
+  document.getElementById('dialogue-box').style.display = 'block';
+}
+
+function closeDialogue() {
+  isDialogueOpen = false;
+  document.getElementById('dialogue-box').style.display = 'none';
+}
+
+function closeAllModals() {
+  document.getElementById('creator-modal').style.display = 'none';
+  document.getElementById('shop-modal').style.display = 'none';
+  document.getElementById('quest-modal').style.display = 'none';
+  document.getElementById('backpack-modal').style.display = 'none';
+  document.getElementById('album-modal').style.display = 'none';
+}
+
+function openShop(title, items) {
+  closeAllModals();
+  const modal = document.getElementById('shop-modal');
+  const container = document.getElementById('shop-items');
+  document.getElementById('shop-title').innerText = title;
+  container.innerHTML = '';
+
+  items.forEach(item => {
+    const row = document.createElement('div');
+    row.className = 'item-card';
+    const isBought = item.bought;
+    const canAfford = state.money >= item.price;
+
+    row.innerHTML = `
+      <span>${item.name} (<b>${item.price} Kč</b>)</span>
+      <button class="act-btn" ${(!canAfford || isBought) ? 'disabled' : ''}>
+        ${isBought ? 'Aktivní' : 'Koupit'}
+      </button>
+    `;
+    const btn = row.querySelector('button');
+    btn.onclick = () => {
+      if (state.money >= item.price && !isBought) {
+        state.money -= item.price;
+        sounds.coin();
+        item.action();
+        saveState();
+        updateUI();
+        openShop(title, items);
+      }
+    };
+    container.appendChild(row);
+  });
+  modal.style.display = 'block';
+}
+
+function openQuests() {
+  closeAllModals();
+  const modal = document.getElementById('quest-modal');
+  const container = document.getElementById('quest-items');
+  container.innerHTML = '';
+
+  state.quests.forEach(q => {
+    const row = document.createElement('div');
+    row.className = 'item-card';
+    row.innerHTML = `
+      <div>
+        <b>${q.text}</b><br>
+        <small style="color: #a6da95">Odměna: +${q.reward} Kč</small>
+      </div>
+      <span style="font-weight: bold; color: ${q.done ? '#a6da95' : '#eed49f'}">
+        ${q.done ? '✓ Splněno' : 'Probíhá'}
+      </span>
+    `;
+    container.appendChild(row);
+  });
+  modal.style.display = 'block';
+}
+
+function openBackpack() {
+  closeAllModals();
+  const modal = document.getElementById('backpack-modal');
+  const container = document.getElementById('backpack-items');
+  container.innerHTML = '';
+
+  if (state.inventory.length === 0) {
+    container.innerHTML = '<div style="color: #8087a2; text-align: center; padding: 18px;">Batoh je prázdný.<br>Můžeš uvařit čokoládu, upéct dort nebo ulovit rybu!</div>';
+  } else {
+    state.inventory.forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'item-card';
+      row.innerHTML = `
+        <span>🎁 ${item}</span>
+        <small style="color: #eed49f">Použij na rande nebo doma</small>
+      `;
+      container.appendChild(row);
+    });
+  }
+  modal.style.display = 'block';
+}
+
+function openAlbum() {
+  closeAllModals();
+  const modal = document.getElementById('album-modal');
+  const container = document.getElementById('album-items');
+  container.innerHTML = '';
+
+  if (state.photos.length === 0) {
+    container.innerHTML = '<div style="color: #8087a2; text-align: center; padding: 18px;">Zatím nemáš žádné fotky.<br>Stiskni tlačítko <b>Momentka</b> a zachyť fotku!</div>';
+  } else {
+    state.photos.forEach(photo => {
+      const card = document.createElement('div');
+      card.className = 'photo-frame';
+      card.innerHTML = `
+        <img src="${photo.url}">
+        <small style="color: #eed49f; font-weight: bold;">${photo.title}</small>
+      `;
+      container.appendChild(card);
+    });
+  }
+  modal.style.display = 'block';
+}
+
+function updateAmbiance() {
+  const hour = state.time / 60;
+  let bgStyle = '', borderStyle = '', shadowStyle = '', weatherText = '';
+
+  if (hour >= 5 && hour < 8) {
+    bgStyle = 'linear-gradient(135deg, #241442, #5b6078)';
+    borderStyle = '#f5a97f';
+    shadowStyle = '0 0 35px rgba(245, 169, 127, 0.45)';
+    weatherText = '🌅 Svítání';
+  } else if (hour >= 8 && hour < 17) {
+    bgStyle = 'linear-gradient(135deg, #183358, #4c688d)';
+    borderStyle = '#eed49f';
+    shadowStyle = '0 0 45px rgba(238, 212, 159, 0.55)';
+    weatherText = '☀️ Den';
+  } else if (hour >= 17 && hour < 20) {
+    bgStyle = 'linear-gradient(135deg, #441d40, #c6785c)';
+    borderStyle = '#f5a97f';
+    shadowStyle = '0 0 40px rgba(245, 169, 127, 0.5)';
+    weatherText = '🌇 Západ';
+  } else {
+    bgStyle = 'radial-gradient(circle at center, #0e111a 0%, #06070a 100%)';
+    borderStyle = '#494d64';
+    shadowStyle = '0 0 35px rgba(138, 173, 244, 0.2)';
+    weatherText = '🌙 Noc';
+  }
+
+  document.body.style.background = bgStyle;
+  uiBar.style.borderColor = borderStyle;
+  document.getElementById('ui-weather').innerText = weatherText;
+}
+
+function update() {
+  if (state.scene === 'tennis') {
+    updateTennis();
+    return;
+  }
+
+  if (isDialogueOpen || document.querySelector('.modal-box[style*="display: block"]')) return;
+
+  let dx = 0, dy = 0;
+  if (keys['w'] || keys['arrowup']) dy -= 1;
+  if (keys['s'] || keys['arrowdown']) dy += 1;
+  if (keys['a'] || keys['arrowleft']) dx -= 1;
+  if (keys['d'] || keys['arrowright']) dx += 1;
+
+  player.moving = (dx !== 0 || dy !== 0);
+  if (player.moving) {
+    player.stepTimer += (state.ridingScooter ? 0.35 : 0.22);
+    player.x += dx * player.speed;
+    player.y += dy * player.speed;
+  }
+
+  player.x = Math.max(10, Math.min(canvas.width - player.w - 10, player.x));
+  player.y = Math.max(10, Math.min(canvas.height - player.h - 10, player.y));
+
+  for (const c of clouds) {
+    c.x += c.speed;
+    if (c.x > canvas.width + 60) c.x = -60;
+  }
+
+  for (const d of ducks) {
+    d.x += d.vx;
+    if (d.x < 420 || d.x > 530) d.vx = -d.vx;
+  }
+
+  riverBoatX += 0.4;
+  if (riverBoatX > canvas.width + 40) riverBoatX = -50;
+
+  if (state.pet) {
+    pet.tailTimer += 0.16;
+    const pdx = player.x - pet.x;
+    const pdy = player.y - pet.y;
+    const dist = Math.hypot(pdx, pdy);
+    if (dist > (state.ridingScooter ? 45 : 35)) {
+      pet.x += (pdx / dist) * (player.speed * (state.ridingScooter ? 0.95 : 0.9));
+      pet.y += (pdy / dist) * (player.speed * (state.ridingScooter ? 0.95 : 0.9));
+    }
+  }
+
+  for (let i = pet.hearts.length - 1; i >= 0; i--) {
+    pet.hearts[i].y -= 0.6;
+    pet.hearts[i].life--;
+    if (pet.hearts[i].life <= 0) pet.hearts.splice(i, 1);
+  }
+}
+
+function drawSkyElements() {
+  const hour = state.time / 60;
+  if (hour >= 5 && hour <= 20) {
+    const progress = (hour - 5) / 15;
+    const sunX = 100 + progress * 660;
+    const sunY = 95 - Math.sin(progress * Math.PI) * 45;
+
+    const grad = ctx.createRadialGradient(sunX, sunY, 6, sunX, sunY, 32);
+    grad.addColorStop(0, 'rgba(255, 235, 120, 0.95)');
+    grad.addColorStop(0.4, 'rgba(255, 185, 60, 0.4)');
+    grad.addColorStop(1, 'rgba(255, 150, 0, 0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(sunX, sunY, 32, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#fff6b3';
+    ctx.beginPath();
+    ctx.arc(sunX, sunY, 12, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
+    for (const c of clouds) {
+      ctx.beginPath();
+      ctx.arc(c.x, c.y, c.size * 0.35, 0, Math.PI * 2);
+      ctx.arc(c.x + c.size * 0.3, c.y - 8, c.size * 0.45, 0, Math.PI * 2);
+      ctx.arc(c.x + c.size * 0.6, c.y, c.size * 0.35, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  } else {
+    ctx.fillStyle = '#ffffff';
+    for (const s of stars) {
+      ctx.globalAlpha = 0.4 + Math.sin(Date.now() * 0.003 + s.x) * 0.3;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1.0;
+
+    const moonX = 740, moonY = 60;
+    ctx.fillStyle = '#f4f4f2';
+    ctx.beginPath();
+    ctx.arc(moonX, moonY, 16, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#181926';
+    ctx.beginPath();
+    ctx.arc(moonX - 5, moonY - 3, 14, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawStreetLamp(x, y) {
+  const hour = state.time / 60;
+  const isNight = hour < 6 || hour > 19;
+
+  ctx.fillStyle = '#363a4f';
+  ctx.fillRect(x, y, 4, 34);
+  ctx.fillRect(x - 4, y, 12, 3);
+
+  ctx.fillStyle = isNight ? '#eed49f' : '#6e738d';
+  ctx.fillRect(x - 3, y - 6, 10, 8);
+
+  if (isNight) {
+    const lampGlow = ctx.createRadialGradient(x + 2, y, 2, x + 2, y + 10, 36);
+    lampGlow.addColorStop(0, 'rgba(238, 212, 159, 0.4)');
+    lampGlow.addColorStop(1, 'rgba(238, 212, 159, 0)');
+    ctx.fillStyle = lampGlow;
+    ctx.beginPath();
+    ctx.arc(x + 2, y + 10, 36, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawTree(x, y) {
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+  ctx.beginPath();
+  ctx.ellipse(x + 12, y + 42, 16, 8, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#5c3826';
+  ctx.fillRect(x + 8, y + 20, 8, 22);
+
+  ctx.fillStyle = '#2d6a4f';
+  ctx.beginPath();
+  ctx.arc(x + 12, y + 14, 19, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#40916c';
+  ctx.beginPath();
+  ctx.arc(x + 9, y + 10, 13, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawBuilding(b) {
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+  ctx.fillRect(b.x - 4, b.y + b.h - 4, b.w + 8, 8);
+
+  ctx.fillStyle = b.wallColor;
+  ctx.fillRect(b.x, b.y + 16, b.w, b.h - 16);
+
+  ctx.fillStyle = b.roofColor;
+  ctx.beginPath();
+  ctx.moveTo(b.x - 6, b.y + 16);
+  ctx.lineTo(b.x + b.w / 2, b.y - 4);
+  ctx.lineTo(b.x + b.w + 6, b.y + 16);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = '#8bd5ca';
+  ctx.fillRect(b.x + 10, b.y + 24, 28, 22);
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  ctx.beginPath();
+  ctx.moveTo(b.x + 14, b.y + 44);
+  ctx.lineTo(b.x + 28, b.y + 26);
+  ctx.lineTo(b.x + 32, b.y + 26);
+  ctx.lineTo(b.x + 18, b.y + 44);
+  ctx.fill();
+
+  ctx.fillStyle = '#5c3826';
+  ctx.fillRect(b.x + b.w - 32, b.y + b.h - 32, 22, 32);
+  ctx.fillStyle = '#eed49f';
+  ctx.beginPath();
+  ctx.arc(b.x + b.w - 14, b.y + b.h - 16, 2, 0, Math.PI * 2);
+  ctx.fill();
+
+  const stripes = 6;
+  const sw = b.w / stripes;
+  for (let i = 0; i < stripes; i++) {
+    ctx.fillStyle = (i % 2 === 0) ? b.awning : '#ffffff';
+    ctx.fillRect(b.x + i * sw, b.y + 14, sw, 8);
+  }
+
+  ctx.fillStyle = '#cad3f5';
+  ctx.font = 'bold 11px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(b.label, b.x + b.w/2, b.y - 7);
+}
+
+function drawCharacter(x, y, isGirl, moving, step, onScooter) {
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
+  ctx.beginPath();
+  ctx.ellipse(x + 11, y + 30, 9, 4, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  if (onScooter) {
+    ctx.fillStyle = '#8bd5ca';
+    ctx.fillRect(x - 4, y + 21, 30, 8);
+    ctx.fillStyle = '#181926';
+    ctx.beginPath(); ctx.arc(x - 2, y + 28, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + 24, y + 28, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#eed49f';
+    ctx.fillRect(x + 26, y + 20, 3, 3);
+  }
+
+  const legOffset = (moving && !onScooter) ? Math.sin(step) * 3 : 0;
+
+  if (!onScooter) {
+    ctx.fillStyle = '#181926';
+    ctx.fillRect(x + 3, y + 23 + legOffset, 5, 8 - legOffset);
+    ctx.fillRect(x + 14, y + 23 - legOffset, 5, 8 + legOffset);
+  }
+
+  ctx.fillStyle = isGirl ? state.outfit : '#a6da95';
+  ctx.fillRect(x + 2, y + 10, 18, 14);
+  ctx.fillStyle = 'rgba(0,0,0,0.15)';
+  ctx.fillRect(x + 2, y + 19, 18, 5);
+
+  ctx.fillStyle = '#f5c2e7';
+  ctx.fillRect(x + 4, y + 2, 14, 10);
+
+  ctx.fillStyle = 'rgba(237, 135, 150, 0.45)';
+  ctx.fillRect(x + 4, y + 8, 3, 2);
+  ctx.fillRect(x + 15, y + 8, 3, 2);
+
+  ctx.fillStyle = '#181926';
+  ctx.fillRect(x + 7, y + 6, 2, 2);
+  ctx.fillRect(x + 13, y + 6, 2, 2);
+
+  ctx.fillStyle = isGirl ? state.charHair : '#363a4f';
+  if (isGirl) {
+    ctx.fillRect(x + 2, y, 18, 4);
+    if (state.charStyle === 'long') {
+      ctx.fillRect(x + 2, y + 4, 3, 14);
+      ctx.fillRect(x + 17, y + 4, 3, 14);
+    } else {
+      ctx.fillRect(x + 2, y + 4, 2, 8);
+      ctx.fillRect(x + 18, y + 4, 2, 8);
+    }
+  } else {
+    ctx.fillRect(x + 3, y, 16, 4);
+  }
+
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 10px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(isGirl ? (onScooter ? `${state.charName} 🛵` : state.charName) : 'Já (přítel)', x + 11, y - 6);
+}
+
+function drawPet(x, y, type, name, tailTimer) {
+  const isDog = type === 'dog';
+
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+  ctx.beginPath();
+  ctx.ellipse(x + 7, y + 14, 7, 3, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = isDog ? '#f5a97f' : '#b8c0e0';
+  ctx.fillRect(x, y + 4, 14, 9);
+  ctx.fillRect(x + 9, y, 7, 7);
+
+  ctx.fillStyle = isDog ? '#c6785c' : '#8087a2';
+  if (isDog) {
+    ctx.fillRect(x + 10, y + 2, 2, 5);
+  } else {
+    ctx.fillRect(x + 10, y - 2, 2, 2);
+    ctx.fillRect(x + 14, y - 2, 2, 2);
+  }
+
+  ctx.fillStyle = '#363a4f';
+  ctx.fillRect(x + 1, y + 12, 3, 3);
+  ctx.fillRect(x + 9, y + 12, 3, 3);
+
+  const tailY = y + 4 + Math.sin(tailTimer) * 3;
+  ctx.fillStyle = isDog ? '#f5a97f' : '#b8c0e0';
+  ctx.fillRect(x - 3, tailY, 3, 3);
+
+  ctx.fillStyle = '#fff';
+  ctx.font = '9px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(name, x + 7, y - 5);
+
+  ctx.fillStyle = '#ed8796';
+  for (const h of pet.hearts) {
+    ctx.font = '12px sans-serif';
+    ctx.fillText('❤️', h.x, h.y);
+  }
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  if (state.scene === 'tennis') {
+    ctx.fillStyle = '#c05621';
+    ctx.fillRect(60, 60, 740, 410);
+
+    ctx.strokeStyle = '#9c4221';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(60, 60, 740, 410);
+
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(90, 80, 680, 370);
+    ctx.strokeRect(170, 80, 520, 370);
+
+    ctx.beginPath();
+    ctx.moveTo(430, 80);
+    ctx.lineTo(430, 450);
+    ctx.stroke();
+
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 4;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(430, 70);
+    ctx.lineTo(430, 460);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.fillStyle = state.outfit;
+    ctx.fillRect(115, tennis.playerY, tennis.paddleW, tennis.paddleH);
+    ctx.fillStyle = '#a6da95';
+    ctx.fillRect(735, tennis.aiY, tennis.paddleW, tennis.paddleH);
+
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.beginPath();
+    ctx.ellipse(tennis.ballX, tennis.ballY + 6, 6, 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#bef264';
+    ctx.beginPath();
+    ctx.arc(tennis.ballX, tennis.ballY, tennis.ballSize, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = 'rgba(24, 25, 38, 0.88)';
+    ctx.fillRect(330, 15, 200, 40);
+    ctx.strokeStyle = '#8bd5ca';
+    ctx.strokeRect(330, 15, 200, 40);
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 16px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${state.charName}: ${tennis.playerScore}  |  Já: ${tennis.aiScore}`, 430, 41);
+    return;
+  }
+
+  // --- BYT ---
+  if (state.scene === 'home') {
+    ctx.fillStyle = '#654321';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = '#7c542c';
+    ctx.lineWidth = 1;
+    for (let py = 50; py < canvas.height; py += 28) {
+      ctx.beginPath(); ctx.moveTo(0, py); ctx.lineTo(canvas.width, py); ctx.stroke();
+    }
+
+    ctx.fillStyle = '#24273a';
+    ctx.fillRect(0, 0, canvas.width, 50);
+
+    ctx.fillStyle = '#3f4258';
+    ctx.fillRect(20, 340, 180, 160);
+    ctx.strokeStyle = '#2b2d42';
+    ctx.strokeRect(20, 340, 180, 160);
+
+    ctx.fillStyle = '#4a4d68';
+    ctx.fillRect(660, 360, 180, 140);
+
+    ctx.fillStyle = '#363a4f';
+    ctx.fillRect(50, 100, 90, 105);
+    ctx.fillStyle = '#8aadf4';
+    ctx.fillRect(54, 125, 82, 75);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(60, 106, 70, 15);
+    ctx.fillStyle = '#eed49f';
+    ctx.fillRect(142, 110, 10, 10);
+
+    ctx.fillStyle = '#7c432b';
+    ctx.fillRect(160, 95, 75, 50);
+    ctx.fillStyle = '#5c3826';
+    ctx.fillRect(195, 95, 4, 50);
+
+    ctx.fillStyle = '#181926';
+    ctx.fillRect(370, 85, 120, 30);
+    ctx.fillStyle = '#8bd5ca';
+    ctx.fillRect(378, 88, 104, 16);
+    ctx.fillStyle = '#fff';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Netflix 📺', 430, 80);
+
+    ctx.fillStyle = 'rgba(245, 194, 231, 0.45)';
+    ctx.beginPath();
+    ctx.ellipse(430, 240, 115, 60, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#f5c2e7';
+    ctx.stroke();
+
+    drawTree(320, 100);
+
+    ctx.fillStyle = '#494d64';
+    ctx.fillRect(670, 95, 100, 48);
+    ctx.fillStyle = '#eed49f';
+    ctx.fillRect(680, 105, 22, 22);
+    ctx.fillStyle = '#cad3f5';
+    ctx.font = '9px sans-serif';
+    ctx.fillText('Kuchyňka 🍳', 720, 88);
+
+    ctx.fillStyle = '#805030';
+    ctx.fillRect(670, 220, 90, 55);
+    ctx.fillStyle = '#5c3826';
+    ctx.fillRect(650, 230, 15, 35);
+    ctx.fillRect(765, 230, 15, 35);
+    ctx.fillStyle = state.flowersInVase ? '#ed8796' : '#8bd5ca';
+    ctx.beginPath();
+    ctx.arc(715, 245, state.flowersInVase ? 9 : 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.font = '8px sans-serif';
+    ctx.fillText(state.flowersInVase ? '🌸 Květy' : 'Váza', 715, 232);
+
+    ctx.fillStyle = '#3f2212';
+    ctx.fillRect(50, 380, 100, 75);
+    ctx.strokeStyle = '#5c3826';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(50, 380, 100, 75);
+    ctx.fillStyle = '#fff';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(state.garden.planted ? (state.garden.ready ? '🍓 Sklidit!' : '🌱 Roste...') : 'Záhonek', 100, 420);
+
+    ctx.fillStyle = '#5c3826';
+    ctx.fillRect(810, 390, 35, 80);
+    ctx.fillStyle = '#eed49f';
+    ctx.beginPath(); ctx.arc(818, 430, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#cad3f5';
+    ctx.font = 'bold 10px sans-serif';
+    ctx.fillText('Náměstí ➔', 790, 380);
+
+  // --- MĚSTO ZÁPAD ---
+  } else if (state.scene === 'city_west') {
+    ctx.fillStyle = '#2d6a4f';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    drawSkyElements();
+
+    ctx.fillStyle = '#363a4f';
+    ctx.fillRect(0, 205, canvas.width, 95);
+    ctx.fillStyle = '#5b6078';
+    ctx.fillRect(0, 202, canvas.width, 3);
+    ctx.fillRect(0, 300, canvas.width, 3);
+
+    drawStreetLamp(180, 180);
+    drawStreetLamp(620, 180);
+
+    drawTree(280, 140);
+    drawTree(580, 140);
+    drawTree(200, 370);
+
+  // --- MĚSTO VÝCHOD ---
+  } else if (state.scene === 'city_east') {
+    ctx.fillStyle = '#2d6a4f';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    drawSkyElements();
+
+    ctx.fillStyle = '#363a4f';
+    ctx.fillRect(0, 205, canvas.width, 95);
+    ctx.fillStyle = '#5b6078';
+    ctx.fillRect(0, 202, canvas.width, 3);
+    ctx.fillRect(0, 300, canvas.width, 3);
+
+    ctx.fillStyle = '#2b7a78';
+    ctx.beginPath();
+    ctx.ellipse(480, 165, 75, 32, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#3aafa9';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    for (const d of ducks) {
+      ctx.fillStyle = '#eed49f';
+      ctx.beginPath(); ctx.arc(d.x, d.y, 4, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#f5a97f';
+      ctx.fillRect(d.x + (d.vx > 0 ? 3 : -4), d.y - 1, 3, 2);
+    }
+
+    drawStreetLamp(360, 280);
+    drawTree(580, 140);
+    drawTree(780, 140);
+
+    for (const f of flowers) {
+      if (!f.picked) {
+        ctx.fillStyle = '#ed8796';
+        ctx.beginPath(); ctx.arc(f.x, f.y, 5, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#eed49f';
+        ctx.beginPath(); ctx.arc(f.x, f.y, 2, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+
+  // --- KINO ---
+  } else if (state.scene === 'cinema') {
+    ctx.fillStyle = '#181926';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = '#8b263e';
+    for (let r = 280; r < 450; r += 50) {
+      for (let c = 140; c < 740; c += 75) {
+        ctx.fillRect(c, r, 55, 30);
+      }
+    }
+
+    ctx.fillStyle = '#f8fafc';
+    ctx.fillRect(230, 60, 400, 160);
+    ctx.fillStyle = '#ed8796';
+    ctx.font = 'bold 22px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('❤️ Náš Společný Příběh ❤️', 430, 145);
+
+  // --- HOSPŮDKA ---
+  } else if (state.scene === 'pub') {
+    ctx.fillStyle = '#3a1f18';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = '#5c3826';
+    ctx.fillRect(120, 260, 90, 80);
+    ctx.fillRect(630, 260, 90, 80);
+
+    ctx.fillStyle = '#7c432b';
+    ctx.fillRect(240, 80, 360, 60);
+    ctx.fillStyle = '#cad3f5';
+    ctx.fillRect(380, 65, 8, 20);
+    ctx.fillRect(430, 65, 8, 20);
+
+  // --- LONDÝN ---
+  } else if (state.scene === 'london') {
+    ctx.fillStyle = '#24273a';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    drawSkyElements();
+    ctx.fillStyle = '#ed8796';
+    ctx.fillRect(80, 180, 28, 55);
+    ctx.fillStyle = '#eed49f';
+    ctx.fillRect(85, 190, 18, 25);
+    ctx.fillStyle = '#fff';
+    ctx.font = '9px sans-serif';
+    ctx.fillText('London', 94, 175);
+
+  // --- BUDAPEŠŤ ---
+  } else if (state.scene === 'budapest') {
+    ctx.fillStyle = '#181926';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    drawSkyElements();
+
+    ctx.fillStyle = '#1f4e5b';
+    ctx.fillRect(0, 180, canvas.width, 140);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(riverBoatX, 230, 50, 16);
+    ctx.fillStyle = '#f5a97f';
+    ctx.fillRect(riverBoatX + 15, 222, 20, 8);
+    ctx.fillStyle = '#ed8796';
+    ctx.fillRect(riverBoatX + 45, 218, 2, 10);
+
+    ctx.fillStyle = '#363a4f';
+    ctx.fillRect(0, 320, canvas.width, 210);
+
+    ctx.fillStyle = '#eed49f';
+    ctx.fillRect(260, 60, 320, 100);
+    ctx.fillStyle = '#f5a97f';
+    ctx.beginPath(); ctx.moveTo(410, 60); ctx.lineTo(420, 20); ctx.lineTo(430, 60); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(310, 60); ctx.lineTo(318, 35); ctx.lineTo(326, 60); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(514, 60); ctx.lineTo(522, 35); ctx.lineTo(530, 60); ctx.fill();
+  }
+
+  // Vykreslení objektů
+  const curObjs = objects[state.scene] || [];
+  for (const obj of curObjs) {
+    if (obj.type === 'building') {
+      drawBuilding(obj);
+    } else if (obj.type === 'npc') {
+      drawCharacter(obj.x, obj.y, false, false, 0, false);
+    } else if (obj.type === 'court') {
+      ctx.fillStyle = '#c05621';
+      ctx.fillRect(obj.x, obj.y, obj.w, obj.h);
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(obj.x + 8, obj.y + 8, obj.w - 16, obj.h - 16);
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(obj.label, obj.x + obj.w/2, obj.y - 6);
+    } else if (obj.type === 'door') {
+      ctx.fillStyle = '#5c3826';
+      ctx.fillRect(obj.x, obj.y, obj.w, obj.h);
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 10px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(obj.label, obj.x + obj.w/2, obj.y - 6);
+    } else if (obj.type === 'chest') {
+      ctx.fillStyle = '#5c3826';
+      ctx.fillRect(obj.x, obj.y, obj.w, obj.h);
+      ctx.fillStyle = '#eed49f';
+      ctx.fillRect(obj.x + 18, obj.y + 12, 8, 8);
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 10px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(obj.label, obj.x + obj.w/2, obj.y - 6);
+    } else if (obj.type === 'boat_dock') {
+      ctx.fillStyle = '#1f4e5b';
+      ctx.fillRect(obj.x, obj.y, obj.w, obj.h);
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 10px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(obj.label, obj.x + obj.w/2, obj.y - 6);
+    }
+  }
+
+  if (state.pet && state.scene !== 'tennis') {
+    drawPet(pet.x, pet.y, state.pet, state.petName, pet.tailTimer);
+  }
+
+  drawCharacter(player.x, player.y, true, player.moving, player.stepTimer, state.ridingScooter);
+
+  // Noční tónování
+  const hour = state.time / 60;
+  let darkness = 0;
+  if (hour < 5 || hour > 21) darkness = 0.52;
+  else if (hour >= 18 && hour <= 21) darkness = ((hour - 18) / 3) * 0.52;
+  else if (hour >= 5 && hour <= 8) darkness = (1 - (hour - 5) / 3) * 0.52;
+
+  if (darkness > 0) {
+    ctx.fillStyle = `rgba(14, 17, 26, ${darkness})`;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+}
+
+function updateUI() {
+  const h = String(Math.floor(state.time / 60)).padStart(2, '0');
+  const m = String(state.time % 60).padStart(2, '0');
+  document.getElementById('ui-time').innerText = `Čas: ${h}:${m}`;
+  document.getElementById('ui-money').innerText = `Kč: ${state.money}`;
+  
+  let loc = 'Byt';
+  if (state.scene === 'city_west') loc = 'Náměstí';
+  if (state.scene === 'city_east') loc = 'Promenáda';
+  if (state.scene === 'pub') loc = 'Hospůdka';
+  if (state.scene === 'london') loc = 'Londýn';
+  if (state.scene === 'budapest') loc = 'Budapešť';
+  if (state.scene === 'cinema') loc = 'Kino';
+  if (state.scene === 'tennis') loc = 'Tenis (W/S)';
+  document.getElementById('ui-location').innerText = loc;
+
+  document.getElementById('ui-pet').innerText = state.pet ? `🐾 ${state.petName}` : 'Bez mazlíčka';
+}
+
+function gameLoop() {
+  update();
+  draw();
+  requestAnimationFrame(gameLoop);
+}
+
+if (!saved.charName) {
+  openCreatorModal();
+}
+
+updateUI();
+updateAmbiance();
+gameLoop();
+</script>
+</body>
+</html>
